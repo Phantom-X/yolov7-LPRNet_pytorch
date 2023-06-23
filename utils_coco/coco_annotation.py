@@ -1,33 +1,33 @@
-#-------------------------------------------------------#
+# -------------------------------------------------------#
 #   用于处理COCO数据集，根据json文件生成txt文件用于训练
-#-------------------------------------------------------#
+# -------------------------------------------------------#
 import json
 import os
 from collections import defaultdict
 
-#-------------------------------------------------------#
+# -------------------------------------------------------#
 #   指向了COCO训练集与验证集图片的路径
-#-------------------------------------------------------#
-train_datasets_path     = "coco_dataset/train2017"
-val_datasets_path       = "coco_dataset/val2017"
+# -------------------------------------------------------#
+train_datasets_path = "coco_dataset/train2017"
+val_datasets_path = "coco_dataset/val2017"
 
-#-------------------------------------------------------#
+# -------------------------------------------------------#
 #   指向了COCO训练集与验证集标签的路径
-#-------------------------------------------------------#
-train_annotation_path   = "coco_dataset/annotations/instances_train2017.json"
-val_annotation_path     = "coco_dataset/annotations/instances_val2017.json"
+# -------------------------------------------------------#
+train_annotation_path = "coco_dataset/annotations/instances_train2017.json"
+val_annotation_path = "coco_dataset/annotations/instances_val2017.json"
 
-#-------------------------------------------------------#
+# -------------------------------------------------------#
 #   生成的txt文件路径
-#-------------------------------------------------------#
-train_output_path       = "coco_train.txt"
-val_output_path         = "coco_val.txt"
+# -------------------------------------------------------#
+train_output_path = "coco_train.txt"
+val_output_path = "coco_val.txt"
 
 if __name__ == "__main__":
     name_box_id = defaultdict(list)
-    id_name     = dict()
-    f           = open(train_annotation_path, encoding='utf-8')
-    data        = json.load(f)
+    id_name = dict()
+    f = open(train_annotation_path, encoding='utf-8')
+    data = json.load(f)
 
     annotations = data['annotations']
     for ant in annotations:
@@ -71,9 +71,9 @@ if __name__ == "__main__":
     f.close()
 
     name_box_id = defaultdict(list)
-    id_name     = dict()
-    f           = open(val_annotation_path, encoding='utf-8')
-    data        = json.load(f)
+    id_name = dict()
+    f = open(val_annotation_path, encoding='utf-8')
+    data = json.load(f)
 
     annotations = data['annotations']
     for ant in annotations:
