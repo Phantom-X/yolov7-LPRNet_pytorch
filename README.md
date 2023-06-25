@@ -31,6 +31,17 @@ pip install -r notzero2allrequirements.txt
 ### 2.运行
 保证权重模型路径正确后，直接运行 main.py 即可，里面有超参数，检测模式参数等等可以调，看注释调整就行
 
+## 预训练权重网盘链接：
+百度网盘：
+best_epoch_weights.pth(放根目录model_data文件夹中)：
+
+    链接: https://pan.baidu.com/s/1OlljN60S1ZJBc0rdCROFPA 提取码: i4x6 
+
+Final_LPRNet_model.pth（放到LPRNet文件夹中的weight文件夹中）：
+
+     链接: https://pan.baidu.com/s/1Ukq4NWMBbUEKZtD7iq-FwQ 提取码: aztp
+
+
 
 ## Reference
 https://github.com/WongKinYiu/yolov7
