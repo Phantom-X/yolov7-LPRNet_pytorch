@@ -187,7 +187,7 @@ if __name__ == "__main__":
                 print('Open Error! Try again!')
                 continue
             else:
-                r_image = yolo.detect_image(image)
+                r_image, results = yolo.detect_image(image)
                 r_image.show()
     else:
         raise AssertionError(

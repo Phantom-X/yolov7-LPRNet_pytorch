@@ -157,23 +157,12 @@ class YOLO(object):
                                                          image_shape, self.letterbox_image, conf_thres=self.confidence,
                                                          nms_thres=self.nms_iou)
 
-            print("-----------------------------------------------------------------------------------")
-            print(results)
-            print("-----------------------------------------------------------------------------------")
-
             if results[0] is None:
-                return image
-
+                return None
 
             top_label = np.array(results[0][:, 6], dtype='int32')
             top_conf = results[0][:, 4] * results[0][:, 5]
             top_boxes = results[0][:, :4]
-        # ---------------------------------------------------------#
-        #   设置字体与边框厚度
-        # ---------------------------------------------------------#
-        font = ImageFont.truetype(font='model_data/simhei.ttf',
-                                  size=np.floor(3e-2 * image.size[1] + 0.5).astype('int32'))
-        thickness = int(max((image.size[0] + image.size[1]) // np.mean(self.input_shape), 1))
         # ---------------------------------------------------------#
         #   计数
         # ---------------------------------------------------------#
@@ -187,55 +176,24 @@ class YOLO(object):
                 classes_nums[i] = num
             print("classes_nums:", classes_nums)
         # ---------------------------------------------------------#
-        #   是否进行目标的裁剪
+        #   计算结果集
         # ---------------------------------------------------------#
-        if crop:
-            for i, c in list(enumerate(top_boxes)):
-                top, left, bottom, right = top_boxes[i]
-                top = max(0, np.floor(top).astype('int32'))
-                left = max(0, np.floor(left).astype('int32'))
-                bottom = min(image.size[1], np.floor(bottom).astype('int32'))
-                right = min(image.size[0], np.floor(right).astype('int32'))
-
-                dir_save_path = "img_crop"
-                if not os.path.exists(dir_save_path):
-                    os.makedirs(dir_save_path)
-                crop_image = image.crop([left, top, right, bottom])
-                crop_image.save(os.path.join(dir_save_path, "crop_" + str(i) + ".png"), quality=95, subsampling=0)
-                print("save crop_" + str(i) + ".png to " + dir_save_path)
-        # ---------------------------------------------------------#
-        #   图像绘制
-        # ---------------------------------------------------------#
+        result_set = []
         for i, c in list(enumerate(top_label)):
             predicted_class = self.class_names[int(c)]
             box = top_boxes[i]
             score = top_conf[i]
-
             top, left, bottom, right = box
-
             top = max(0, np.floor(top).astype('int32'))
             left = max(0, np.floor(left).astype('int32'))
             bottom = min(image.size[1], np.floor(bottom).astype('int32'))
             right = min(image.size[0], np.floor(right).astype('int32'))
-
             label = '{} {:.2f}'.format(predicted_class, score)
-            draw = ImageDraw.Draw(image)
-            label_size = draw.textsize(label, font)
             label = label.encode('utf-8')
+            result_set.append([label, top, left, bottom, right])
             print(label, top, left, bottom, right)
 
-            if top - label_size[1] >= 0:
-                text_origin = np.array([left, top - label_size[1]])
-            else:
-                text_origin = np.array([left, top + 1])
-
-            for i in range(thickness):
-                draw.rectangle([left + i, top + i, right - i, bottom - i], outline=self.colors[c])
-            draw.rectangle([tuple(text_origin), tuple(text_origin + label_size)], fill=self.colors[c])
-            draw.text(text_origin, str(label, 'UTF-8'), fill=(0, 0, 0), font=font)
-            del draw
-
-        return image
+        return result_set
 
     def get_FPS(self, image, test_interval):
         image_shape = np.array(np.shape(image)[0:2])
@@ -430,7 +388,7 @@ class YOLO(object):
                 continue
 
             f.write("%s %s %s %s %s %s\n" % (
-            predicted_class, score[:6], str(int(left)), str(int(top)), str(int(right)), str(int(bottom))))
+                predicted_class, score[:6], str(int(left)), str(int(top)), str(int(right)), str(int(bottom))))
 
         f.close()
         return
@@ -621,7 +579,8 @@ class YOLO_ONNX(object):
                              range(len(self.anchors_mask))][::-1]
         for i in range(len(self.anchors_mask)):
             outputs[i] = np.reshape(outputs[i], (
-            1, len(self.anchors_mask[i]) * (5 + self.num_classes), feature_map_shape[i][0], feature_map_shape[i][1]))
+                1, len(self.anchors_mask[i]) * (5 + self.num_classes), feature_map_shape[i][0],
+                feature_map_shape[i][1]))
 
         outputs = self.bbox_util.decode_box(outputs)
         # ---------------------------------------------------------#
