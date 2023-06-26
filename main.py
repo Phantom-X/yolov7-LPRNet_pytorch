@@ -9,12 +9,8 @@ from torch.autograd import Variable
 from PIL import Image, ImageDraw, ImageFont
 from LPRNet.data.load_data import CHARS, CHARS_DICT, LPRDataLoader
 from LPRNet.model.LPRNet import build_lprnet
-from torchvision import transforms
 from yolo_carid import YOLO
 
-transformsTotensor = transforms.Compose([
-    transforms.ToTensor()
-])
 
 
 def get_parser():
