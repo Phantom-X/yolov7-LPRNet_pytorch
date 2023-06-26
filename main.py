@@ -26,11 +26,11 @@ def get_parser():
     parser.add_argument('--show', default=True, type=bool, help='show test image and its predict result or not.')
     parser.add_argument('--pretrained_model', default='./LPRNet/weights/Final_LPRNet_model.pth',
                         help='pretrained base model')
-    parser.add_argument('--mode', default='predict', help='识别模式，predict,video等')
+    parser.add_argument('--mode', default='video', help='识别模式，predict,video等')
     parser.add_argument('--count', default=False, help='是否计数')
-    parser.add_argument('--video_path', default=0, help='视频路径，0是摄像头')
-    parser.add_argument('--video_save_path', default="", help='检测视频保存路径')
-    parser.add_argument('--video_fps', default=25.0, help='用于保存的视频的fps')
+    parser.add_argument('--video_path', default="img/test2.mp4", help='视频路径，0是摄像头')
+    parser.add_argument('--video_save_path', default="./output/2023-6-26.mp4", help='检测视频保存路径')
+    parser.add_argument('--video_fps', default=10.0, help='用于保存的视频的fps')
     parser.add_argument('--test_interval', default=25.0,
                         help='用于指定测量fps的时候，图片检测的次数。理论上test_interval越大，fps越准确。')
     parser.add_argument('--fps_image_path', default="img/street.jpg", help='用于指定测试的fps图片')
@@ -43,6 +43,9 @@ def get_parser():
     return args
 
 
+args = get_parser()
+
+
 def pretreatment(img):
     img = cv.resize(img, (94, 24))
     img = img.astype('float32')
@@ -52,7 +55,28 @@ def pretreatment(img):
     return img
 
 
-def recognize(args, image, result_set):
+def initlprnet():
+    lprnet = build_lprnet(lpr_max_len=args.lpr_max_len, phase=False, class_num=len(CHARS),
+                          dropout_rate=args.dropout_rate)
+    device = torch.device("cuda:0" if args.cuda else "cpu")
+    lprnet.to(device)
+    print("Successful to build network!")
+    # load pretrained model
+    if args.pretrained_model:
+        lprnet.load_state_dict(torch.load(args.pretrained_model))
+        return lprnet
+    else:
+        return None
+
+
+lprnet = initlprnet()
+if lprnet is None:
+    print("[Error] Can't found pretrained mode, please check!")
+else:
+    print("load pretrained model successful!")
+
+
+def recognize(image, result_set):
     image = cv.cvtColor(np.array(image), cv.COLOR_RGB2BGR)
     img_set = []
     for r in result_set:
@@ -65,19 +89,6 @@ def recognize(args, image, result_set):
     else:
         img_set = Variable(img_set)
     print(img_set.shape)
-
-    lprnet = build_lprnet(lpr_max_len=args.lpr_max_len, phase=False, class_num=len(CHARS),
-                          dropout_rate=args.dropout_rate)
-    device = torch.device("cuda:0" if args.cuda else "cpu")
-    lprnet.to(device)
-    print("Successful to build network!")
-    # load pretrained model
-    if args.pretrained_model:
-        lprnet.load_state_dict(torch.load(args.pretrained_model))
-        print("load pretrained model successful!")
-    else:
-        print("[Error] Can't found pretrained mode, please check!")
-        return False
 
     prebs = lprnet(img_set)
     # greedy decode
@@ -108,13 +119,14 @@ def recognize(args, image, result_set):
         carid_set.append(carid)
     # print(carid_set)
     tuple_set = zip(result_set, carid_set)
-    show(image, tuple_set)
+    return tuple_set
 
 
 def show(image, tuple_set):
     image = cvImgAddText(image, tuple_set)
     cv.imshow("test", image)
-    cv.waitKey()
+    cv.imwrite("./output/1.jpg", image)
+    cv.waitKey(0)
     cv.destroyAllWindows()
 
 
@@ -124,11 +136,11 @@ def cvImgAddText(img, tuple_set, textColor=(255, 0, 0), textSize=30):
     draw = ImageDraw.Draw(img)
     fontText = ImageFont.truetype("LPRNet/data/NotoSansCJK-Regular.ttc", textSize, encoding="utf-8")
     for pos, carid in tuple_set:
-        draw.text((pos[2], pos[1]-25), carid, textColor, font=fontText)
+        draw.text((pos[2], pos[1] - 25), carid, textColor, font=fontText)
     return cv.cvtColor(np.asarray(img), cv.COLOR_RGB2BGR)
 
 
-def detect(args):
+def detect():
     mode = args.mode
     count = args.count
     video_path = args.video_path
@@ -152,13 +164,12 @@ def detect(args):
                 print('Open Error! Try again!')
                 continue
             else:
-                results = yolo.detect_image(image, count=count)
-                if results is None:
+                result_set = yolo.detect_image(image, count=count)
+                if result_set is None:
                     image.show()
                 else:
-                    recognize(args, image, results)
-            break
-
+                    tuple_set = recognize(image, result_set)
+                    show(image, tuple_set)
 
     elif mode == "video":
         capture = cv.VideoCapture(video_path)
@@ -172,7 +183,7 @@ def detect(args):
             raise ValueError("未能正确读取摄像头（视频），请注意是否正确安装摄像头（是否正确填写视频路径）。")
 
         fps = 0.0
-        while (True):
+        while True:
             t1 = time.time()
             # 读取某一帧
             ref, frame = capture.read()
@@ -182,10 +193,14 @@ def detect(args):
             frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
             # 转变成Image
             frame = Image.fromarray(np.uint8(frame))
-            # 进行检测
-            frame = np.array(yolo.detect_image(frame))
+            # 进行检测得到box结果集
+            result_set = yolo.detect_image(frame)
             # RGBtoBGR满足opencv显示格式
-            frame = cv.cvtColor(frame, cv.COLOR_RGB2BGR)
+            if result_set is None:
+                frame = cv.cvtColor(frame, cv.COLOR_RGB2BGR)
+            else:
+                tuple_set = recognize(frame, result_set)
+                frame = cvImgAddText(frame, tuple_set)
 
             fps = (fps + (1. / (time.time() - t1))) / 2
             print("fps= %.2f" % (fps))
@@ -234,9 +249,8 @@ def detect(args):
                 yolo.detect_heatmap(image, heatmap_save_path)
     else:
         raise AssertionError(
-            "Please specify the correct mode: 'predict', 'video', 'fps', 'heatmap', 'export_onnx', 'dir_predict'.")
+            "Please specify the correct mode: 'predict', 'video', 'fps', 'heatmap', 'dir_predict'.")
 
 
 if __name__ == '__main__':
-    args = get_parser()
-    detect(args)
+    detect()

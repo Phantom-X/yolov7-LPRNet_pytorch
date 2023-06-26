@@ -4,6 +4,7 @@
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/LPRNet/data/test" />
       <excludeFolder url="file://$MODULE_DIR$/VOCdevkit" />
+      <excludeFolder url="file://$MODULE_DIR$/output" />
     </content>
     <orderEntry type="jdk" jdkName="pytorch1.7" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
