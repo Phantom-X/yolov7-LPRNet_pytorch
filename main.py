@@ -26,7 +26,7 @@ def get_parser():
     parser.add_argument('--show', default=True, type=bool, help='show test image and its predict result or not.')
     parser.add_argument('--pretrained_model', default='./LPRNet/weights/Final_LPRNet_model.pth',
                         help='pretrained base model')
-    parser.add_argument('--mode', default='video', help='识别模式，predict,video等')
+    parser.add_argument('--mode', default='dir_predict', help='识别模式，predict,video,dir_predict等')
     parser.add_argument('--count', default=False, help='是否计数')
     parser.add_argument('--video_path', default="img/test2.mp4", help='视频路径，0是摄像头')
     parser.add_argument('--video_save_path', default="./output/2023-6-26.mp4", help='检测视频保存路径')
@@ -34,8 +34,8 @@ def get_parser():
     parser.add_argument('--test_interval', default=25.0,
                         help='用于指定测量fps的时候，图片检测的次数。理论上test_interval越大，fps越准确。')
     parser.add_argument('--fps_image_path', default="img/street.jpg", help='用于指定测试的fps图片')
-    parser.add_argument('--dir_origin_path', default="img/", help='指定了用于检测的图片的文件夹路径')
-    parser.add_argument('--dir_save_path', default="img_out/", help='指定了检测完图片的保存路径')
+    parser.add_argument('--dir_origin_path', default="img/dir/", help='指定了用于检测的图片的文件夹路径')
+    parser.add_argument('--dir_save_path', default="output/dir/", help='指定了检测完图片的保存路径')
     parser.add_argument('--heatmap_save_path', default="model_data/heatmap_vision.png",
                         help='heatmap_save_path   热力图的保存路径，默认保存在model_data下')
     args = parser.parse_args()
@@ -233,10 +233,16 @@ def detect():
                     ('.bmp', '.dib', '.png', '.jpg', '.jpeg', '.pbm', '.pgm', '.ppm', '.tif', '.tiff')):
                 image_path = os.path.join(dir_origin_path, img_name)
                 image = Image.open(image_path)
-                r_image = yolo.detect_image(image)
+                result_set = yolo.detect_image(image)
+                if result_set is None:
+                    r_image = cv.cvtColor(np.asarray(image), cv.COLOR_RGB2BGR)
+                else:
+                    tuple_set = recognize(image, result_set)
+                    r_image = cvImgAddText(image, tuple_set)
                 if not os.path.exists(dir_save_path):
                     os.makedirs(dir_save_path)
-                r_image.save(os.path.join(dir_save_path, img_name.replace(".jpg", ".png")), quality=95, subsampling=0)
+                cv.imwrite(os.path.join(dir_save_path, img_name.replace(".jpg", ".png")), r_image)
+                # r_image.save(os.path.join(dir_save_path, img_name.replace(".jpg", ".png")), quality=95, subsampling=0)
     elif mode == "heatmap":
         while True:
             img = input('Input image filename:')
