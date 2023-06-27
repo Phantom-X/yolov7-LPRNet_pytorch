@@ -22,10 +22,10 @@ def get_parser():
     parser.add_argument('--show', default=True, type=bool, help='show test image and its predict result or not.')
     parser.add_argument('--pretrained_model', default='./LPRNet/weights/Final_LPRNet_model.pth',
                         help='pretrained base model')
-    parser.add_argument('--mode', default='dir_predict', help='识别模式，predict,video,dir_predict等')
+    parser.add_argument('--mode', default='video', help='识别模式，predict,video,dir_predict等')
     parser.add_argument('--count', default=False, help='是否计数')
-    parser.add_argument('--video_path', default="img/test2.mp4", help='视频路径，0是摄像头')
-    parser.add_argument('--video_save_path', default="./output/2023-6-26.mp4", help='检测视频保存路径')
+    parser.add_argument('--video_path', default="img/test3.mp4", help='视频路径，0是摄像头')
+    parser.add_argument('--video_save_path', default="./output/2023-6-27.mp4", help='检测视频保存路径')
     parser.add_argument('--video_fps', default=10.0, help='用于保存的视频的fps')
     parser.add_argument('--test_interval', default=25.0,
                         help='用于指定测量fps的时候，图片检测的次数。理论上test_interval越大，fps越准确。')
@@ -193,7 +193,7 @@ def detect():
             result_set = yolo.detect_image(frame)
             # RGBtoBGR满足opencv显示格式
             if result_set is None:
-                frame = cv.cvtColor(frame, cv.COLOR_RGB2BGR)
+                frame = cv.cvtColor(np.asarray(frame), cv.COLOR_RGB2BGR)
             else:
                 tuple_set = recognize(frame, result_set)
                 frame = cvImgAddText(frame, tuple_set)
